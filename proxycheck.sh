@@ -6,10 +6,12 @@
 #
 # AUTHOR:  ENDWALL DEVELOPEMENT TEAM
 # CREATION DATE: JUNE 10 2016
-# VERSION: 0.15
-# REVISION DATE: AUGUST 22 2016
+# VERSION: 0.16
+# BRANCH: BSD
+# REVISION DATE: SEPTEMBER 18 2016
 # 
-# CHANGE LOG:  - added -i torsocks --isolate flag
+# CHANGE LOG:  - remove -i, use $RANDOM,
+#              - added -i torsocks --isolate flag
 #              - user agent path into variable 
 #              - moved user agents to user_agents.txt
 #              - Bug fix + increase timeout to 180
@@ -40,19 +42,16 @@
 #  $ cd ~/proxies
 #
 #  START TOR DAEMON:
-#     SYSTEMD:
-#  $ sudo systemctl start tor
-#  $ sudo systemctl status tor
-#     OPENRC:
-#  $ sudo rc-update add tor default
-#  $ sudo rc-service start tor
-#  $ sudo rc-status
+#     RCCTL:
+#  $ su
+#  # rcctl start tor
+#  # exit
+#  $ pwd
 #    STAND ALONE:
-#  $ tor_alpha  
+#  $ tor &
 #     Run Proxyload 
 #  $ proxyload
 #     Run Proxycheck on output
-#
 #  $ proxycheck ssl_proxies.txt  
 #  $ proxycheck socks_proxies.txt
 #############################################################################################################################################################################

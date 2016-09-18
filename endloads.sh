@@ -8,11 +8,14 @@
 #
 # AUTHOR:  THE ENDWARE DEVELOPMENT TEAM
 # CREATION DATE: APRIL 9 2016
-# VERSION: 0.22
-# REVISION DATE: AUGUST 25 2016
+# VERSION: 0.23
+# BRANCH: BSD
+# REVISION DATE: SEPTEMBER 18 2016
 # COPYRIGHT: THE ENDWARE DEVELOPMENT TEAM, 2016
 #
-# CHANGE LOG:   - torsocks -i --isolate flag on main download 
+# CHANGE LOG:   - Updated instructons
+#               - remove -i flag, remove shuf, use sort -R, use $RANDOM 
+#               - torsocks -i --isolate flag on main download 
 #               - Rewrote input arguments section + added exit node pull option --exitnode, --uarand, --no-agent, --no-header, --help
 #               - USERAGENTS path variable 
 #               - Moved user agents to user_agents.txt
@@ -44,14 +47,12 @@
 #     save links.txt and exit editor.
 # 
 #  START TOR DAEMON:
-#     SYSTEMD:
-#  $ sudo systemctl start tor
-#  $ sudo systemctl status tor
-#     OPENRC:
-#  $ sudo rc-update add tor default
-#  $ sudo rc-service start tor
-#  $ sudo rc-status
-#      
+#     RCCTL:
+#  $ su
+#  # rcctl start tor
+#  # exit
+#  $ pwd
+#   
 #     Run EndLoads 
 #  $  endloads.sh links.txt
 #  

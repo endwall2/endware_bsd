@@ -6,11 +6,14 @@
 #
 # AUTHOR:  THE ENDWALL DEVELOPMENT TEAM
 # CREATION DATE:   APRIL 9 2016
-# VERSION: 0.16
-# REVISION DATE: AUGUST 25 2016
+# VERSION: 0.17
+# BRANCH: BSD 
+# REVISION DATE: SEPTEMBER 18 2016
 # COPYRIGHT: THE ENDWALL DEVELOPMENT TEAM, 2016 
 # 
-# CHANGE LOG:  - torsocks -i --isolate flag on download
+# CHANGE LOG:  - update some instructions
+#              - removed -i flag, remove shuf use sort -R, use $RANDOM,
+#              - torsocks -i --isolate flag on download
 #              - rewrote input argument checking with a for loop + set switches
 #              - add USERAGENTS path variable + default to first line of user_agents.txt
 #              - moved user agents to user_agents.txt
@@ -34,13 +37,9 @@
 #  $  export PATH=$PATH:~/bin
 # 
 #  START TOR DAEMON:
-#     SYSTEMD:
-#  $ sudo systemctl start tor
-#  $ sudo systemctl status tor
-#     OPENRC:
-#  $ sudo rc-update add tor default
-#  $ sudo rc-service start tor
-#  $ sudo rc-status
+#    RCCTL:
+#  $ su
+#  # rcctl start tor
 #      
 #     Run EndCurl 
 #  $  endcurl http://www.google.com

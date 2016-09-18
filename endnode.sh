@@ -6,12 +6,14 @@
 #
 # AUTHOR:  THE ENDWARE DEVELOPEMENT TEAM
 # CREATION DATE: APRIL 30 2016
-# VERSION: 0.16
-# REVISION DATE: AUGUST 22 2016
+# VERSION: 0.17
+# BRANCH: BSD
+# REVISION DATE: SEPTEMBER 18 2016
 # COPYRIGHT: THE ENDWARE DEVELOPMENT TEAM, 2016 
 #
 #
-# CHANGE LOG:  - Moved user agents to user_agents.txt
+# CHANGE LOG:  - remove shuf, use sort -R, use $RANDOM
+#              - Moved user agents to user_agents.txt
 #              - Default to tor browser UA + Header with -r for randomization
 #              - Updated user agents
 #              - Added flag -e to switch between geoiplookup (default) and endware iplookup

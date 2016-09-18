@@ -7,11 +7,13 @@
 #
 # AUTHOR:  THE ENDWALL DEVELOPMENT TEAM
 # CREATION DATE: APRIL 9 2016
-# VERSION: 0.16
-# REVISION DATE: AUGUST 25 2016
+# VERSION: 0.17
+# BRANCH: BSD
+# REVISION DATE: SEPTEMBER 18 2016
 # COPYRIGHT: THE ENDWALL DEVELOPMENT TEAM, 2016
 #
-# CHANGE LOG:  - torsocks -i --isolate on main download 
+# CHANGE LOG:  - remove -i flag, remove shuf, use sort -R, use $RANDOM
+#              - torsocks -i --isolate on main download 
 #              - Rewrite of input checking section, --uarand, --no-header, --no-agent flags
 #              - Added USERAGENTS path variable + default to first line of user_agents.txt
 #              - Moved user agents to user_agents.txt 
@@ -36,15 +38,13 @@
 #  $  cd Downloads
 # 
 #  START TOR DAEMON:
-#     SYSTEMD:
-#  $ sudo systemctl start tor
-#  $ sudo systemctl status tor
-#     OPENRC:
-#  $ sudo rc-update add tor default
-#  $ sudo rc-service start tor
-#  $ sudo rc-status
-#      
-#     Run EndLoads 
+#     RCCTL:
+#  $ su
+#  # rcctl start tor
+#  # exit
+#  $ pwd
+#        
+#     Run EndGet 
 #  $  endget http://www.website.com/coolfile.tar
 #  # use random user agent
 #  $  endget --uarand http://www.website.com/coolfile.tar 

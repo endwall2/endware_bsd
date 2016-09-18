@@ -6,10 +6,12 @@
 #
 # AUTHOR:  ENDWALL DEVELOPEMENT TEAM
 # CREATION DATE: JUNE 15 2016
-# VERSION: 0.10
-# REVISION DATE: AUGUST 27 2016
+# VERSION: 0.11
+# BRANCH: BSD
+# REVISION DATE: SEPTEMBER 18 2016
 # 
-# CHANGE LOG:  - user agent path into variable 
+# CHANGE LOG:  - removed -i flag, removed shuf, use sort -R | head -n 1
+#              - user agent path into variable 
 #              - Moved user agents to user_agents.txt
 #              - Default to tor browser UA with -r flag for randomized UA + tor browser header + timeout
 #              - Updated user agents
@@ -35,17 +37,15 @@
 #  $  export PATH=$PATH:/home/$USER/bin
 # 
 #  START TOR DAEMON:
-#     SYSTEMD:
-#  $ sudo systemctl start tor
-#  $ sudo systemctl status tor
-#     OPENRC:
-#  $ sudo rc-update add tor default
-#  $ sudo rc-service start tor
-#  $ sudo rc-status
+#     RCCTL:
+#  $ su
+#  # rcctl start tor
+#  # exit
+#  $ pwd
 #    STAND ALONE:
-#  $ tor_alpha &
-#      
-#     Run ProxyLoad 
+#  $ tor &
+#
+#  Run ProxyLoad 
 #  $ proxyload
 #  
 #############################################################################################################################################################################

@@ -8,11 +8,14 @@
 #
 # AUTHOR:  THE ENDWARE DEVELOPMENT TEAM
 # CREATION DATE: APRIL 9 2016
-# VERSION: 0.26
-# REVISION DATE: AUGUST 27 2016
+# VERSION: 0.27
+# BRANCH: BSD
+# REVISION DATE: SEPTEMBER 18 2016
 # COPYRIGHT: THE ENDWARE DEVELOPMENT TEAM, 2016 
 #
-# CHANGE LOG:  - use --isolate flag in torsocks -i 
+# CHANGE LOG:  - update instructions
+#              - remove -i flag, remove shuf, use sort -R, use $RANDOM 
+#              - use --isolate flag in torsocks -i 
 #              - rewrite of input variable switches, --uarand,--exitnode, --proxylist plist.txt, --no-header, --no-agent 
 #              - changed input variable order, ytlinks.txt is now always the last input + fixed stray rm bug
 #              - moved user agents to user_agent.txt
@@ -55,13 +58,11 @@
 #     save ytlinks.txt and exit editor.
 # 
 #  START TOR DAEMON:
-#     SYSTEMD:
-#  $ sudo systemctl start tor
-#  $ sudo systemctl status tor
-#     OPENRC:
-#  $ sudo rc-update add tor default
-#  $ sudo rc-service start tor
-#  $ sudo rc-status
+#     RCCTL:
+#  $ su
+#  # rcctl start tor
+#  # exit
+#  $ pwd
 #      
 #     Run EndTube 
 #  $  endtube ytlinks.txt
@@ -81,8 +82,8 @@
 #  $  torsocks curl --proxy protocol://ipv4address:port www.google.com
 #
 #     Run EndTube
-#  $  endtube proxies.txt ytlinks.txt
-#  $  endtube --uarand proxies.txt ytlinks.txt
+#  $  endtube --proxylist proxies.txt ytlinks.txt
+#  $  endtube --uarand --proxylist proxies.txt ytlinks.txt
 #  $  endtube --exitnode --proxylist proxies.txt ytinks.txt 
 #  $  endtube -exitnode --uarand --proxylist proxies.txt ytinks.txt 
 #  $  endtube --uarand --exitnodee --proxylist proxies.txt ytinks.txt
@@ -273,6 +274,7 @@ then
 # pick a random user agent
 UA=$( grep -v "#" "$USERAGENTS" | sort -R | head -n 1 )
 else
+# default to first line in user_agents.txt
 UA=$( grep -v "#" "$USERAGENTS" | head -n 1 )
 fi
 
