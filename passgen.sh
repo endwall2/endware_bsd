@@ -12,7 +12,7 @@
 #
 # DESCRIPTION: Generates a random password output to screen or a text file
 #######################################################################################################################################
-# CHANGE LOG: - changed something
+# CHANGE LOG: - removed -i flag from base64
 #             - Removed cat
 #             - Added EULA+Instructions
 #
