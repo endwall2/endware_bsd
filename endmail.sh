@@ -1,45 +1,45 @@
 #!/bin/sh
-#####################################################################################################################################
-# TITLE: passgen.sh
-# TYPE: BOURN SHELL SCRIPT
-# AUTHOR: THE ENDWARE DEVELOPMENT TEAM
-# CREATION DATE: JUNE 21, 2016
-# VERSION: 0.04
-# BRANCH: BSD
-# REVISION DATE: SEPTEMBER 20, 2016
-# COPYRIGHT: THE ENDWARE DEVELOPMENT TEAM, 2016
+#################################################################################################################################################
+# NAME: endmail.sh
+# TYPE: BOURNE SHELL SCRIPT
+# DESCRIPTION: Sends mail to a tor hidden service mail server using torsocks, swaks
 #
+# AUTHOR:  THE ENDWARE DEVELOPMENT TEAM
+# CREATION DATE: AUGUST 2 2016
+# VERSION: 0.01
+# REVISION DATE: AUGUST 2 2016
+# COPYRIGHT: THE ENDWARE DEVELOPMENT TEAM, 2016 
 #
-# DESCRIPTION: Generates a random password output to screen or a text file
-#######################################################################################################################################
-# CHANGE LOG: - Added --help, --version, --bytes, --outfile flags
-#             - Removed cat
-#             - Added EULA+Instructions
+# CHANGE LOG:  - Worked on Instructions 
+#              - File Creation
 #
-######################################################################################################################################
-# DEPENDENCIES: base64, head, od, /dev/urandom
-######################################################################################################################################
-# INSTRUCTIONS:
+########################################################################################################################################
+# DEPENDENCIES: torsocks,swaks,cut,echo,perl-net-ssleay
+########################################################################################################################################
+# INSTRUCTIONS: Make a bin directory in ~/ add it to the path. Copy this file there and make executable.
+#               Make a videos directory in Downloads.  Get some download links, and some proxies place in separte text files.
+#               Start the TOR daemon. Execute the script in the ~/Download/videos/ directory.    
+#   
+#  Do the following at a command prompt
 #
-#  $ wget http://ix.io/112E
-#  $ mv 112E passgen.sh 
-#  $ chmod u+wrx passgen.sh
-#  $ mkdir ~/bin
-#  $ export PATH=$PATH:/home/$USER/bin
-#  $ cp passgen.sh ~/bin/passgen
-#  $ passgen
-#  $ passgen --help
-#  $ passgen --version
-#  $ passgen --bytes 256
-#  $ passgen --outfile outfile.txt  
-#  $ passgen --bytes 256 --outfile pass.txt
+#  $  mkdir ~/bin
+#  $  chmod u+wrx endmail.sh
+#  $  nano endmail.sh  ## edit the sender line
 #
-#
+#  $  cp endmail.sh ~/bin/endmail
+#  $  export PATH=$PATH:~/bin
+#  $  mkdir ~/email
+#  $  cd ~/email
+#  $  emacs/nano/leafpad message.txt
+#  $  gpg --armor --sign --encrypt --local-user "USER ID" --recipient "Recipient ID" message.txt 
+#  $  mv message.txt.asc encrypted.asc
+#  $  endmail recipient@hidden.onion "Re: The Subject is" encrypted.asc
 #############################################################################################################################################################################
 #                                         ACKNOWLEDGEMENTS
 #############################################################################################################################################################################
-#  The Endware Development Team would like to acknowledge the work and efforts of OdiliTime, and SnakeDude who graciously hosted and promoted this software project.  
-#  Without their efforts and their wonderful website www.endchan.xyz, The Endware Suite would not exist in the public domain at all in any form. 
+#  The Endware Development Team would like to acknowledge the work and efforts of OdiliTime, and SnakeDude who graciously hosted and promoted 
+#  this software project.  Without their efforts and their wonderful website www.endchan.xyz, The Endware Suite would not exist in the public domain 
+#  at all in any form. 
 #
 #  So thanks to OdiliTime, and to SnakeDude for inspiring this work and for hosting and promoting it. 
 #  
@@ -141,102 +141,19 @@
 #       and it will be taken into consideration.  
 #################################################################################################################################################################################
 
-###################################################     BEGINNING OF PROGRAM        #############################################################################################
-version=0.04
-branch="BSD"
-rev_date="20/09/2016"
-len_switch="off"
-byte_switch="off"
-syntax="check"
-nargs=$#
+#####################################################        BEGINNING OF PROGRAM      #####################################################################################
+##  get input list from shell argument 
 
-for arg in "$@"
-do
+sender="endwall@alpha.onion"
+recipient="$1"
+rserver=$( echo $1 | cut -d @ -f 2 )
+hstring=$( echo "$sender" | cut -d @ -f 2 )
+subject="$2"
+message="$3"
 
-if [ "$byte_switch"  == "on" ]
-then
-bytes="$arg"
-byte_switch="off" 
-has_byte="yes"
-syntax="good"
-shift
-fi 
-
-if [ "$file_switch"  == "on" ]
-then
-outfile="$arg"
-file_switch="off"
-has_file="yes"
-syntax="good"
-shift
-fi 
-
-if [ "$arg" == --help ] 
-then 
-echo "PASSGEN outputs random passwords using /dev/urandom and base64"
-echo " "
-echo "USAGE: $ passgen                      # default random password generation"
-echo "USAGE: $ passgen --help               # output usage statements"
-echo "USAGE: $ passgen --version            # output version statements"
-echo "USAGE: $ passgen --bytes n            # output a random password using n bytes of urandom"
-echo "USAGE: $ passgen --outfile file.txt   # output a random password to file.txt"
-echo "USAGE: $ passgen --bytes n --outfile file.txt   # output a random password using n bytes of urandom to file.txt"
-echo " "
-echo "Try $ passgen --bytes 256 "
-echo " "
-shift
-exit 1 
-fi
-
-if [ "$arg" == --version ] 
-then 
-echo "PASSGEN version:" "$version" "branch:" "$branch" "revised on:" "$rev_date"
-echo "Copyright, 2016, THE ENDWARE DEVELOPMENT TEAM "
-shift
-exit 1 
-fi
-
-if [ "$arg" == --bytes ]
-then
-byte_switch="on"
-syntax="good"
-shift
-elif [ "$arg" == --outfile ]
-then
-file_switch="on"
-syntax="good"
-shift
-else
- if [ "$syntax" == "check" ]
- then 
- echo " BAD SYNTAX: please type $ passgen --help "
- exit 1
- fi
-fi 
-
-syntax="check"
-
-done
-
-if [ "$has_file" == "yes" ] 
-then 
- if [ "$has_byte" == "yes" ] 
- then 
-# head -c "$bytes" /dev/urandom | base64 >> "$outfile"
- od -t a -N "$bytes" /dev/urandom | awk '{print $2$3$4$5$6$7$8$9$10$11$12$13$14$15}' >> "$outfile"
- else
- head -n 3 /dev/urandom | base64 >> "$outfile"
- fi
-else
- if [ "$has_byte" == "yes" ] 
- then 
-# head -c "$bytes" /dev/urandom | base64 
- od -t a -N "$bytes" /dev/urandom | awk '{print $2$3$4$5$6$7$8$9$10$11$12$13$14$15}'
-
- else
- head -n 3 /dev/urandom | base64 
- fi
-fi
+torsocks swaks --server "$rserver" --to "$recipient" --from "$sender" --helo "$hstring" --tls --h-Subject "$subject" --body "$message"
 
 exit "$?"
-###################################################         END OF PROGRAM           ############################################################################################
+
+#####################################################        END OF PROGRAM      #####################################################################################
+                                                                                                                                                                                                                                                                                                                                                            

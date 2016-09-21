@@ -1,45 +1,57 @@
-#!/bin/sh
-#####################################################################################################################################
-# TITLE: passgen.sh
-# TYPE: BOURN SHELL SCRIPT
-# AUTHOR: THE ENDWARE DEVELOPMENT TEAM
-# CREATION DATE: JUNE 21, 2016
-# VERSION: 0.04
-# BRANCH: BSD
-# REVISION DATE: SEPTEMBER 20, 2016
-# COPYRIGHT: THE ENDWARE DEVELOPMENT TEAM, 2016
+#################################################################################################################################################
+# NAME: endfix.cf
+# TYPE: CONFIGURATION FILE 
+# DESCRIPTION: Endware Postfix configuration
 #
+# AUTHOR:  THE ENDWARE DEVELOPMENT TEAM
+# CREATION DATE: AUGUST 2 2016
+# VERSION: 0.02
+# REVISION DATE: AUGUST 2 2016
+# COPYRIGHT: THE ENDWARE DEVELOPMENT TEAM, 2016 
 #
-# DESCRIPTION: Generates a random password output to screen or a text file
-#######################################################################################################################################
-# CHANGE LOG: - Added --help, --version, --bytes, --outfile flags
-#             - Removed cat
-#             - Added EULA+Instructions
+# CHANGE LOG:  - Reorganized sections, headers
+#              - Worked on Instructions 
+#              - File Creation
 #
-######################################################################################################################################
-# DEPENDENCIES: base64, head, od, /dev/urandom
-######################################################################################################################################
-# INSTRUCTIONS:
+########################################################################################################################################
+# DEPENDENCIES: postfix, openssl
+########################################################################################################################################
+# INSTRUCTIONS: Copy this file to /etc/postfix/main.cf, postmap the aliase files, start the postfix server.
+#                    
+#  Do the following at a command prompt:
 #
-#  $ wget http://ix.io/112E
-#  $ mv 112E passgen.sh 
-#  $ chmod u+wrx passgen.sh
-#  $ mkdir ~/bin
-#  $ export PATH=$PATH:/home/$USER/bin
-#  $ cp passgen.sh ~/bin/passgen
-#  $ passgen
-#  $ passgen --help
-#  $ passgen --version
-#  $ passgen --bytes 256
-#  $ passgen --outfile outfile.txt  
-#  $ passgen --bytes 256 --outfile pass.txt
-#
+#  $  su 
+#  #  cd /etc/postfix/
+#  #  cp main.cf main.bkp
+#  #  cp endfix.cf /etc/postfix/main.cf
+#  #  echo " " >> virtual
+#  #  postmap virtual
+#  #  echo " " >> virtusertables
+#  #  postmap virtusertables
+#  #  echo " " >> sender_access
+#  #  postmap sender_access
+#  #  echo " " >> client_access
+#  #  postmap client_access
+#  #  echo " " >> recipient_access
+#  #  postmap recipient_access
+#  #  postmap aliases
+#  #  mkdir -p /etc/tls
+#  #  mkdir -p /etc/tls/private
+#  #  mkdir -p /etc/tls/certs
+#  #  cd /etc/tls/private
+#  #  openssl req -x509 -newkey rsa:4096 -keyout smtpd.key -out smtpd.crt -days 365 -nodes
+#     put some fake/funny data in the certificate 
+#  #  mv smtpd.crt /etc/tls/certs    
+#  #  systemctl reload postfix 
+#  #  systemctl start postfix
+#  #  systemctl status postfix
 #
 #############################################################################################################################################################################
 #                                         ACKNOWLEDGEMENTS
 #############################################################################################################################################################################
-#  The Endware Development Team would like to acknowledge the work and efforts of OdiliTime, and SnakeDude who graciously hosted and promoted this software project.  
-#  Without their efforts and their wonderful website www.endchan.xyz, The Endware Suite would not exist in the public domain at all in any form. 
+#  The Endware Development Team would like to acknowledge the work and efforts of OdiliTime, and SnakeDude who graciously hosted and promoted 
+#  this software project.  Without their efforts and their wonderful website www.endchan.xyz, The Endware Suite would not exist in the public domain 
+#  at all in any form. 
 #
 #  So thanks to OdiliTime, and to SnakeDude for inspiring this work and for hosting and promoting it. 
 #  
@@ -141,102 +153,152 @@
 #       and it will be taken into consideration.  
 #################################################################################################################################################################################
 
-###################################################     BEGINNING OF PROGRAM        #############################################################################################
-version=0.04
-branch="BSD"
-rev_date="20/09/2016"
-len_switch="off"
-byte_switch="off"
-syntax="check"
-nargs=$#
+####################################        BEGINNING OF CONFIGURATION       ######################################################
 
-for arg in "$@"
-do
+############################  DAEMON AND DIRECTORIES #################################
+compatibility_level = 2
+soft_bounce = yes
+queue_directory = /var/spool/postfix
+command_directory = /usr/bin
+daemon_directory = /usr/lib/postfix/bin
+data_directory = /var/lib/postfix
+mail_owner = postfix
+home_mailbox = Maildir/
+debug_peer_level = 2
+debugger_command =
+	 PATH=/bin:/usr/bin:/usr/local/bin:/usr/X11R6/bin
+	 ddd $daemon_directory/$process_name $process_id & sleep 5
+sendmail_path = /usr/bin/sendmail
+newaliases_path = /usr/bin/newaliases
+mailq_path = /usr/bin/mailq
+setgid_group = postdrop
+html_directory = no
+manpage_directory = /usr/share/man
+sample_directory = /etc/postfix
+readme_directory = /usr/share/doc/postfix
+inet_protocols = ipv4
+meta_directory = /etc/postfix
+shlib_directory = /usr/lib/postfix
 
-if [ "$byte_switch"  == "on" ]
-then
-bytes="$arg"
-byte_switch="off" 
-has_byte="yes"
-syntax="good"
-shift
-fi 
+######################  SERVER INFORMATION ##########################################
+smtpd_banner = "MY HIDDEN MAIL SERVER $mydomain ESMTP"
+mynetworks_style = host
+myhostname = host.server67jlbcduh.onion
+mydomain = server67jlbcduh.onion
+myorigin = $mydomain
+inet_interfaces = localhost
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain, web.$mydomain
+mynetworks = 127.0.0.0/8, localhost, $myhostname, $mydomain
 
-if [ "$file_switch"  == "on" ]
-then
-outfile="$arg"
-file_switch="off"
-has_file="yes"
-syntax="good"
-shift
-fi 
+##################  ALIASES AND VIRTUAL MAPS ##########################################################
 
-if [ "$arg" == --help ] 
-then 
-echo "PASSGEN outputs random passwords using /dev/urandom and base64"
-echo " "
-echo "USAGE: $ passgen                      # default random password generation"
-echo "USAGE: $ passgen --help               # output usage statements"
-echo "USAGE: $ passgen --version            # output version statements"
-echo "USAGE: $ passgen --bytes n            # output a random password using n bytes of urandom"
-echo "USAGE: $ passgen --outfile file.txt   # output a random password to file.txt"
-echo "USAGE: $ passgen --bytes n --outfile file.txt   # output a random password using n bytes of urandom to file.txt"
-echo " "
-echo "Try $ passgen --bytes 256 "
-echo " "
-shift
-exit 1 
-fi
+alias_maps = hash:/etc/postfix/aliases
+alias_database = $alias_maps
+local_recipient_maps = unix:passwd.byname $alias_maps
+virtual_maps = hash:/etc/postfix/virtusertables
+virtual_alias_maps = hash:/etc/postfix/virtual
 
-if [ "$arg" == --version ] 
-then 
-echo "PASSGEN version:" "$version" "branch:" "$branch" "revised on:" "$rev_date"
-echo "Copyright, 2016, THE ENDWARE DEVELOPMENT TEAM "
-shift
-exit 1 
-fi
+###################### TLS ENCRYPTION #######################################################
+smtp_tls_security_level = encrypt
+smtpd_tls_security_level = encrypt
 
-if [ "$arg" == --bytes ]
-then
-byte_switch="on"
-syntax="good"
-shift
-elif [ "$arg" == --outfile ]
-then
-file_switch="on"
-syntax="good"
-shift
-else
- if [ "$syntax" == "check" ]
- then 
- echo " BAD SYNTAX: please type $ passgen --help "
- exit 1
- fi
-fi 
+smtp_tls_loglevel = 1
+smtpd_tls_loglevel = 1 
 
-syntax="check"
+tls_random_source = dev:/dev/urandom
+tls_random_bytes = 64
+tls_random_reseed_period = 3600s
 
-done
+smtpd_use_tls = yes
 
-if [ "$has_file" == "yes" ] 
-then 
- if [ "$has_byte" == "yes" ] 
- then 
-# head -c "$bytes" /dev/urandom | base64 >> "$outfile"
- od -t a -N "$bytes" /dev/urandom | awk '{print $2$3$4$5$6$7$8$9$10$11$12$13$14$15}' >> "$outfile"
- else
- head -n 3 /dev/urandom | base64 >> "$outfile"
- fi
-else
- if [ "$has_byte" == "yes" ] 
- then 
-# head -c "$bytes" /dev/urandom | base64 
- od -t a -N "$bytes" /dev/urandom | awk '{print $2$3$4$5$6$7$8$9$10$11$12$13$14$15}'
+smtpd_tls_ciphers = high
+smtp_tls_ciphers = high
+smtpd_tls_exclude_ciphers = aNULL, RC4, MD5, DES, 3DES, DES-CBC3-SHA, RC4-SHA, AES256-SHA, AES128-SHA
+smtp_tls_protocols = !SSLv2, !SSLv3
+smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3
 
- else
- head -n 3 /dev/urandom | base64 
- fi
-fi
+smtp_tls_note_starttls_offer = yes
+smtpd_tls_received_header = yes
+smtpd_tls_session_cache_database = btree:/var/lib/postfix/smtpd_tls_session_cache
+smtp_tls_session_cache_database = btree:/var/lib/postfix/smtp_tls_session_cache
+smtpd_tls_session_cache_timeout = 3600s
+smtpd_starttls_timeout = 360s
+smtp_tls_session_cache_timeout = 3600s 
 
-exit "$?"
-###################################################         END OF PROGRAM           ############################################################################################
+smtpd_tls_auth_only = yes
+smtpd_tls_cert_file = /etc/tls/certs/smtpd.crt
+smtpd_tls_key_file = /etc/tls/private/smtpd.key
+
+###################### SASL AUTHENTICATION #################################################
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_local_domain = $mydomain
+broken_sasl_auth_clients = no
+smtpd_sasl_exceptions_networks = !localhost
+smtp_sasl_security_options = noanonymous, noplaintext, nodictionary, noactive
+
+################## RESTRICTIONS ###########################################################
+
+smtpd_helo_restrictions = permit_mynetworks,  
+  	permit
+
+smtpd_data_restrictions = reject_unauth_pipelining,
+                          permit
+
+smtpd_etrn_restrictions = permit_mynetworks,
+                          reject
+
+smtpd_client_restrictions = permit_mynetworks,
+	check client_access hash:/etc/postfix/client_access,
+	permit
+
+smtpd_sender_restrictions = permit_mynetworks,
+	check_sender_access hash:/etc/postfix/sender_access,
+	permit_sasl_authenticated,
+	reject_unknown_sender_domain,
+	permit
+
+smtpd_recipient_restrictions = permit_mynetworks,
+	check_recipient_access hash:/etc/postfix/recipient_access,
+	reject_unauth_pipelining,
+	reject_unauth_destination, 
+	reject_non_fqdn_recipient,
+	permit_sasl_authenticated,
+	permit
+
+################ OTHER CONFIGS  ################################
+mailbox_size_limit = 0
+message_size_limit = 102400000
+maximal_queue_lifetime = 2h
+bounce_queue_lifetime = 1h
+in_flow_delay = 1s
+
+smtpd_helo_required = yes
+disable_vrfy_command = yes
+
+smtpd_delay_reject = yes
+smtpd_error_sleep_time = 10
+smtpd_soft_error_limit = 2
+smtpd_hard_error_limit = 5
+smtpd_junk_command_limit = 3
+strict_rfc821_envelopes = no
+show_user_unknown_table_name = no
+#####################   REJECT CODES  ########################
+access_map_reject_code = 554
+defer_code = 554
+invalid_hostname_reject_code = 554
+maps_rbl_reject_code = 554
+non_fqdn_reject_code = 554
+reject_code = 554
+relay_domains_reject_code = 554
+unknown_address_reject_code = 554
+unknown_client_reject_code = 554
+unknown_hostname_reject_code = 554
+unknown_relay_recipient_reject_code = 554
+unknown_virtual_alias_reject_code = 554
+unknown_virtual_mailbox_reject_code = 554
+unverified_sender_reject_code = 550
+unknown_local_recipient_reject_code = 550
+#################################################################
+#########################################        END OF CONFIGURATION     #######################################################
