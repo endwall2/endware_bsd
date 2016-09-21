@@ -17,7 +17,7 @@
 #             - Added EULA+Instructions
 #
 ######################################################################################################################################
-# DEPENDENCIES: base64, head, od, /dev/urandom
+# DEPENDENCIES: base64, head, /dev/urandom
 ######################################################################################################################################
 # INSTRUCTIONS:
 #
@@ -223,7 +223,7 @@ then
  if [ "$has_byte" == "yes" ] 
  then 
 # head -c "$bytes" /dev/urandom | base64 >> "$outfile"
- od -t a -N "$bytes" /dev/urandom | awk '{print $2$3$4$5$6$7$8$9$10$11$12$13$14$15}' >> "$outfile"
+ od -t a -N "$bytes" /dev/urandom | awk '{print $2$3$4$5$6$7$8$9$10$11$12$13$14$15$16}' >> "$outfile"
  else
  head -n 3 /dev/urandom | base64 >> "$outfile"
  fi
@@ -231,7 +231,7 @@ else
  if [ "$has_byte" == "yes" ] 
  then 
 # head -c "$bytes" /dev/urandom | base64 
- od -t a -N "$bytes" /dev/urandom | awk '{print $2$3$4$5$6$7$8$9$10$11$12$13$14$15}'
+ od -t a -N "$bytes" /dev/urandom | awk '{print $2$3$4$5$6$7$8$9$10$11$12$13$14$15$16}'
 
  else
  head -n 3 /dev/urandom | base64 
