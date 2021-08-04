@@ -5,8 +5,8 @@
 ## Copyright: 2016-2021, The Endware Development Team
 ## All Rights Reserved
 ## Creation Date: August 1, 2021
-## Version: 0.0021
-## Revision Date: August 2, 2021
+## Version: 0.0022
+## Revision Date: August 4, 2021
 ##  
 ## Description: Translation of endwall to PF for OpenBSD
 ##
@@ -143,8 +143,8 @@
 ######################################## BEGINNING OF PROGRAM    ##########################################################
 
 ###############  VERSION INFORMATION  ##############
-version="0.0021"
-rev_date="02/08/2021"
+version="0.0022"
+rev_date="04/08/2021"
 branch="OpenBSD"
 product="ENDWALL PF/BSD"
 ##################################################
@@ -155,7 +155,6 @@ product="ENDWALL PF/BSD"
 rule_file="$HOME/sec/pf_rules.conf"
 blacklist_file="$HOME/sec/blacklist.txt"
 #blacklist_file="/etc/blacklist"
-
 
 ### replace the previous rule file
 # touch "$rule_file"
@@ -189,20 +188,19 @@ main()
 int_if="$( ifconfig | grep "UP,BROADCAST" | cut -d : -f 1 )"
 ### internal ip address
 int_ip="$( ifconfig | grep "inet" | tail -n 1 | cut -d " " -f 2 )"
+### internal mac address
+int_mac="$(ifconfig -a | grep "lladdr " | awk '{print $2}')"
 
 ## local host interface
 lo_if="$( ifconfig | grep "UP,LOOPBACK" | cut -d : -f 1 )"
 ## local host ip
 lo_ip="$( ifconfig | grep "inet " | head -n 1 | cut -d " " -f 2 )"
-### internal mac address
-## int_mac= ?? 
 
 ## Default Gatway 
 #gateway_ip="$(route show | grep "default" | cut -d " " -f 13)"
 gateway_ip="$( route show | grep "default" | awk '{print $2}' )"
 ## Requires nmap
 gateway_mac="$( nmap -sS "$gateway_ip" -p 53 | grep -a "MAC Address:" | awk '{print $3}' ) "
-
 
 ################# PREAMBLE #########################
 echo "set block-policy drop   # default block policy " >> "$rule_file"
@@ -218,7 +216,6 @@ echo "set debug info    # logging level " >> "$rule_file"
 
 ################### BLOCK ALL TRAFFIC #####################
 echo "block all" >> "$rule_file" 
-
 
 ###########  LOCAL HOST RULES   ##################
 echo "LOADING LOCALHOST RULES"
@@ -404,22 +401,9 @@ echo "pass out quick on lo inet proto icmp icmp-type 3 max-pkt-rate 100/10" >> "
 # echo "pass in quick on lo inet proto icmp-type 11 code " >> "$rule_file"
 # echo "pass out quick on lo inet proto icmp-type 11 code " >> "$rule_file"
 
-##
-
+###################### BLOCK REMAINING LOCALHOST ################################
+echo "block on lo all" >> "$rule_file"
 echo "LOCALHOST RULES LOADED"
-
-#set skip on lo
-
-######################## BLOCK STATELESS TRAFFIC #############################
-#echo "block return	# block stateless traffic"  >> "$rule_file"
-###################### BLOCK REMAINING LOCALHOST ################################
-#echo "block on lo all" >> "$rule_file"
-########## BLOCK ALL #######################
-#echo "block all" >> "$rule_file" 
-#echo "block on "$int_if" all" >> "$rule_file"
-###################### BLOCK REMAINING LOCALHOST ################################
-#echo "block on lo all" >> "$rule_file"
-#echo "block " >> "$rule_file"
 
 #################  PUBLIC OUTPUT   #################################
 ###########    CLIENT OUTBOUND RULES ################
@@ -545,6 +529,7 @@ client_out udp 30301
 client_out tcp 22543
 
 ################   PUBLIC INPUT ####################################
+echo "LOADING SERVER INBOUND RULES"
 ###########    SERVER INBOUND RULES #################
 
 ############### SMTP ###################
@@ -574,22 +559,17 @@ client_out tcp 22543
 # server_in_int udp 53 "$client_ip2" 
 # server_in_int udp 53 "$client_ip3"
 
+echo "SERVER INBOUND RULES LOADED"
 ######################################################################
 
 ##############  FINAL LOG DROP #####################
-
 # By default, do not permit remote connections to X11
 echo "block return in on ! lo0 proto tcp to port 6000:6010" >> "$rule_file"
 # Port build user does not need network
 echo "block return out log proto {tcp udp} user _pbuild" >> "$rule_file"
-
 ################   BLOCK EVERYTHING  ########################
-### drop all remaining traffic
-#echo "block all" >> "$rule_file" 
-
-## Currently equivalent to what default is doing 
-echo "pass" >> "$rule_file" 
-
+### Drop all remaining traffic
+echo "block all" >> "$rule_file" 
 
 ##############  LOAD THE FILE  #################
 pfctl -f "$rule_file"
@@ -603,12 +583,16 @@ default()
 
 ################  PREAMBLE ##################################
 echo "set block-policy return   # default block policy " >> "$rule_file"
-
 ################   ORIGINAL RULE SET (USELESS)
-#     We will have rules for local host
+#     We will have rules for local host 
+#    (letting localhost run free is wrong)
 echo "set skip on lo    # no rules for local host " >> "$rule_file"
 echo "block return	# block stateless traffic"  >> "$rule_file"
+## This just lets everything through that localhost established ( not a good idea)
+## The attack might be from software on the inside connecting out and then letting 
+## all other connections in...bad idea
 echo "pass		# establish keep-state" >> "$rule_file"
+#echo "block all # block everything else" >> "$rule_file"
 ################################################
 # load the rules
 pfctl -f "$rule_file"
@@ -624,20 +608,11 @@ lo_port=$2
 
 echo "pass out quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port "$lo_port" to "$lo_ip" port "$lo_port" " >> "$rule_file"
 echo "pass out quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port "$lo_port" to "$lo_ip" port !="$lo_port" " >> "$rule_file"
+echo "pass out quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port !="$lo_port" to "$lo_ip" port "$lo_port" " >> "$rule_file"
+
 echo "pass in quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port "$lo_port" to "$lo_ip" port "$lo_port" " >> "$rule_file"
+echo "pass in quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port "$lo_port" to "$lo_ip" port !="$lo_port" " >> "$rule_file"
 echo "pass in quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port !="$lo_port" to "$lo_ip" port "$lo_port" " >> "$rule_file"
-
-}
-
-lo_open2()
-{
-protocol=$1
-lo_port=$2
-
-echo "pass out quick on lo inet proto "$protocol" from lo port "$lo_port" to lo port "$lo_port" " >> "$rule_file"
-echo "pass out quick on lo inet proto "$protocol" from lo port "$lo_port" to lo port !="$lo_port" " >> "$rule_file"
-echo "pass in quick on lo inet proto "$protocol" from lo port "$lo_port" to lo port "$lo_port" " >> "$rule_file"
-echo "pass in quick on lo inet proto "$protocol" from lo port !="$lo_port" to lo port "$lo_port" " >> "$rule_file"
 
 }
 
@@ -650,12 +625,31 @@ protocol=$1
 port1=$2
 
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port "$port1" " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port "$port1" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
-
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port !="$port1" " >> "$rule_file"
+echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port !="$port1" to any port "$port1" " >> "$rule_file"
+
+echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port "$port1" " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port !="$port1" " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1" to "$int_ip" port "$port1" " >> "$rule_file"
+
+}
+
+client_out_ks()
+{
+protocol=$1
+port1=$2
+
+#### NOTE State tracking slows down connections by a lot (slow internet)
+echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port "$port1" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 )" >> "$rule_file"
+echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port !="$port1" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 )" >> "$rule_file"
+echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port !="$port1" to any port "$port1" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 )" >> "$rule_file"
+
+echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port "$port1" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port !="$port1" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
 echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1" to "$int_ip" port "$port1" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
 
 }
+
 
 
 client_out_x()
@@ -711,33 +705,41 @@ echo "pass in quick on "$int_if" inet proto "$protocol" all icmp-type "$type" ke
 
 ###############  SERVER INBOUND FUNCTIONS ######################
 
+## For external WAN clients
 server_in()
 {
 protocol=$1
 port1=$2
 
-echo "pass in quick on "$int_if" inet proto "$protocol" from any  port "$port1" " to "$int_ip" port "$port1  " >> "$rule_file"
+### Same port connection port to same port
+echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" " to "$int_ip" port "$port1  " >> "$rule_file"
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1 to any port "$port1" " keep state (max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
-
+##  connection to your server port from not same client port 
 echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1 to "$int_ip" port "$port1" " " >> "$rule_file"
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port !="$port1"  keep state (max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 )" >> "$rule_file"
 
+## note connection tracking seems to slow down connections significantly
+## Maybe remove the keep state line if you need speed
+
 }
 
-
+### for internal LAN clients where you know the connecting IP 
 server_in_int()
 {
 protocol=$1
 port1=$2
 client_ip=$3
 
+## port to same port connections
 echo "pass in quick on "$int_if" inet proto "$protocol" from "$client_ip" port "$port1" " to "$int_ip" port "$port1  " >> "$rule_file"
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1 to "$client_ip" port "$port1" " keep state (max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
-
+## port to different port conenctions
 echo "pass in quick on "$int_if" inet proto "$protocol" from "$client_ip" port !="$port1 to "$int_ip" port "$port1" " " >> "$rule_file"
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to "$client_ip" port !="$port1"  keep state (max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 )" >> "$rule_file"
 
 }
+
+### make a function for mac address binding for LAN clients
 
 ######################  END OF FUNCTIONS ######################################
 
