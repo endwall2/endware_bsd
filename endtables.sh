@@ -1,6 +1,6 @@
 #! /bin/sh
 ######################################################### 
-## Title: endwall_bsd.sh
+## Title: endtables.sh
 ## Author: The Endware Development Team
 ## Copyright: 2016-2021, The Endware Development Team
 ## All Rights Reserved
