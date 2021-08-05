@@ -5,7 +5,7 @@
 ## Copyright: 2016-2021, The Endware Development Team
 ## All Rights Reserved
 ## Creation Date: August 1, 2021
-## Version: 0.0024
+## Version: 0.0025
 ## Revision Date: August 5, 2021
 ##  
 ## Description: Translation of endwall to PF for OpenBSD
@@ -25,9 +25,11 @@
 ## Default rules (OpenBSD default PF setting)
 ## # ./endwall_pf.sh -d
 ##
-## Tables (not workng yet)
-## # pfctl badhosts -T add "8.8.8.0/24"
+## Tables 
+## # pfctl -t blacklist -T add "8.8.8.0/24"
 ## # echo "8.8.8.0/24" >> /etc/blacklist.txt
+## # pfctl -t blacklist -T del "8.8.8.8" 
+## # 
 #######################################################
 #############################################################################################################################################################################
 #                                         ACKNOWLEDGMENTS
@@ -145,7 +147,7 @@
 ######################################## BEGINNING OF PROGRAM    ##########################################################
 
 ###############  VERSION INFORMATION  ##############
-version="0.0024"
+version="0.0025"
 rev_date="05/08/2021"
 branch="OpenBSD"
 product="ENDWALL PF/BSD"
@@ -275,13 +277,13 @@ echo "set debug info    # logging level " >> "$rule_file"
 
 ###########   TABLES ###################################
 
-### BROKEN (FIX THIS)
+##
 #### Default blacklist
-#table <blacklist> persist file "$blacklist_file"
-#block quick on lo from <blacklist> to any
-#block quick on lo from lo to <blacklist>
-#block quick on "$int_if" from <blacklist> to any
-#block quick on "$int_if" from "$int_ip" to <blacklist>
+echo "table <blacklist> persist " >> "$rule_file"
+echo "block quick on lo from <blacklist> to any " >> "$rule_file"
+echo "block quick on lo from lo to <blacklist> " >> "$rule_file"
+echo "block quick on "$int_if" from <blacklist> to any " >> "$rule_file"
+echo "block quick on "$int_if" from "$int_ip" to <blacklist> " >> "$rule_file"
 
 ################### BLOCK ALL TRAFFIC #####################
 ## block all
@@ -354,11 +356,15 @@ lo_open tcp 11371
 
 ########### TOR ######################
 lo_open tcp 9050
+lo_open tcp 9051
 lo_open tcp 9053
 lo_open tcp 9040
 lo_open tcp 9001
+lo_open tcp 9150
+lo_open tcp 9151
 
 lo_open udp 9053
+lo_open udp 9153
 
 ############  LDAP ################
 lo_open tcp 389
@@ -565,7 +571,18 @@ client_out tcp 9418
 
 ########### TOR  #########################
 client_out tcp 9050
+client_out tcp 9053
+client_out tcp 9040
 client_out tcp 9001
+
+client_out tcp 9053
+client_out udp 9053
+
+client_out tcp 9150
+client_out tcp 9151
+client_out tcp 9153
+client_out udp 9153
+
 
 ###############  COINS   ##################
 
@@ -643,14 +660,14 @@ echo "block return in on ! lo0 proto tcp to port 6000:6010" >> "$rule_file"
 echo "block return out log proto {tcp udp} user _pbuild" >> "$rule_file"
 ################   BLOCK EVERYTHING  ########################
 ### Drop all remaining traffic
-echo "block all" >> "$rule_file" 
+echo "block quick all" >> "$rule_file" 
 
 ################### BLOCK ALL TRAFFIC #####################
-#echo "block in on "$int_if" all ">> "$rule_file" 
-#echo "block in on "$lo_if" all ">> "$rule_file"
+#echo "block in quick on "$int_if" all ">> "$rule_file" 
+#echo "block in quick on "$lo_if" all ">> "$rule_file"
  
-#echo "block out on "$int_if" all ">> "$rule_file" 
-#echo "block out on "$lo_if" all ">> "$rule_file" 
+#echo "block out quick on "$int_if" all ">> "$rule_file" 
+#echo "block out quick on "$lo_if" all ">> "$rule_file" 
 
 ##############  LOAD THE FILE  #################
 pfctl -f "$rule_file"
