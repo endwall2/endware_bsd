@@ -5,7 +5,7 @@
 ## Copyright: 2016-2021, The Endware Development Team
 ## All Rights Reserved
 ## Creation Date: August 1, 2021
-## Version: 0.0022
+## Version: 0.0023
 ## Revision Date: August 4, 2021
 ##  
 ## Description: Translation of endwall to PF for OpenBSD
@@ -143,7 +143,7 @@
 ######################################## BEGINNING OF PROGRAM    ##########################################################
 
 ###############  VERSION INFORMATION  ##############
-version="0.0022"
+version="0.0023"
 rev_date="04/08/2021"
 branch="OpenBSD"
 product="ENDWALL PF/BSD"
@@ -153,12 +153,38 @@ product="ENDWALL PF/BSD"
 
 # set the rule file name
 rule_file="$HOME/sec/pf_rules.conf"
+config_file="/etc/pf.conf"
+backup_file="/etc/pf.bkp"
+
 blacklist_file="$HOME/sec/blacklist.txt"
 #blacklist_file="/etc/blacklist"
 
 ### replace the previous rule file
-# touch "$rule_file"
 echo "" > "$rule_file"
+### create or check for backup file
+touch "$backup_file"
+touch "$config_file"
+
+############### INTERNAL VARIABLES ###########################
+### default interface
+int_if="$( ifconfig | grep "UP,BROADCAST" | cut -d : -f 1 )"
+### internal ip address
+int_ip="$( ifconfig | grep "inet" | tail -n 1 | cut -d " " -f 2 )"
+### internal mac address
+int_mac="$(ifconfig -a | grep "lladdr " | awk '{print $2}')"
+
+## local host interface
+lo_if="$( ifconfig | grep "UP,LOOPBACK" | cut -d : -f 1 )"
+## local host ip
+lo_ip="$( ifconfig | grep "inet " | head -n 1 | cut -d " " -f 2 )"
+
+## Default Gatway 
+#gateway_ip="$(route show | grep "default" | cut -d " " -f 13)"
+gateway_ip="$( route show | grep "default" | awk '{print $2}' )"
+## Requires nmap
+gateway_mac="$( nmap -sS "$gateway_ip" -p 53 | grep -a "MAC Address:" | awk '{print $3}' ) "
+	
+
 
 ################  FLUSH RULES    ##########################
 # flush the rules
@@ -182,27 +208,23 @@ pfctl -F all
 ########################### FUNCTIONS ##############################
 main()
 {
-
-############### INTERNAL VARIABLES ###########################
-### default interface
-int_if="$( ifconfig | grep "UP,BROADCAST" | cut -d : -f 1 )"
-### internal ip address
-int_ip="$( ifconfig | grep "inet" | tail -n 1 | cut -d " " -f 2 )"
-### internal mac address
-int_mac="$(ifconfig -a | grep "lladdr " | awk '{print $2}')"
-
-## local host interface
-lo_if="$( ifconfig | grep "UP,LOOPBACK" | cut -d : -f 1 )"
-## local host ip
-lo_ip="$( ifconfig | grep "inet " | head -n 1 | cut -d " " -f 2 )"
-
-## Default Gatway 
-#gateway_ip="$(route show | grep "default" | cut -d " " -f 13)"
-gateway_ip="$( route show | grep "default" | awk '{print $2}' )"
-## Requires nmap
-gateway_mac="$( nmap -sS "$gateway_ip" -p 53 | grep -a "MAC Address:" | awk '{print $3}' ) "
-
-################# PREAMBLE #########################
+	
+################# HEADER ###################################
+echo "## Title: endwall_bsd.sh " >> "$rule_file" 
+echo "## Author: The Endware Development Team. " >> "$rule_file"
+echo "######################################################### " >> "$rule_file"
+echo "## Copyright: 2016-2021, The Endware Development Team" >> "$rule_file"
+echo "## All Rights Reserved" >> "$rule_file"
+echo "## Creation Date: August 1, 2021" >> "$rule_file"
+echo "## Version: "$version" " >> "$rule_file"
+echo "## Revision Date: "$rev_date" " >> "$rule_file"
+echo "## " >> "$rule_file"  
+echo "## Description: Translation of endwall.sh from Iptables to PF for OpenBSD" >> "$rule_file"
+echo "## " >> "$rule_file"
+echo "######################################################" >> "$rule_file"  
+echo "## See /etc/examples/pf.conf or man pf.conf(5) for more examples..." >> "$rule_file"
+echo "## " >> "$rule_file"
+############# PREAMBLE #################################
 echo "set block-policy drop   # default block policy " >> "$rule_file"
 echo "set debug info    # logging level " >> "$rule_file" 
 
@@ -326,8 +348,8 @@ lo_open udp 2514
 #lo_open tcp 111
 
 ############ RSYNC ###############
-#lo_open tcp 873
-#lo_open udp 873
+lo_open tcp 873
+lo_open udp 873
 
 ###########  OPENVPN ##############
 #lo_open tcp 1194
@@ -337,7 +359,7 @@ lo_open udp 2514
 #lo_open udp 943
 
 ########## MS SQL #################
-lo_open tcp 1433
+#lo_open tcp 1433
 
 ########## MY SQL ##############
 lo_open tcp 3306
@@ -381,23 +403,15 @@ lo_open udp 64738
 lo_open tcp 22543
 
 ###############     ICMP RULES        ###################
+### icmp_lo_type icmp-type  
 
-### icmp-type # code #
-
-### ECHO
-echo "pass in quick on lo inet proto icmp icmp-type echoreq" >> "$rule_file"
-echo "pass out quick on lo inet proto icmp icmp-type echoreq" >> "$rule_file"
-
-echo "pass in quick on lo inet proto icmp icmp-type 0 max-pkt-rate 100/10" >> "$rule_file"
-echo "pass out quick on lo inet proto icmp icmp-type 0 max-pkt-rate 100/10" >> "$rule_file"
-
-echo "pass in quick on lo inet proto icmp icmp-type 3 max-pkt-rate 100/10" >> "$rule_file"
-echo "pass out quick on lo inet proto icmp icmp-type 3 max-pkt-rate 100/10" >> "$rule_file"
+icmp_lo_type "echoreq"
+icmp_lo_type 0
+icmp_lo_type 3
 
 ### Need the correct icmp code for these
-#echo "pass in quick on lo inet proto icmp-type 8 code" >> "$rule_file"
-#echo "pass out quick on lo inet proto icmp-type 8 code" >> "$rule_file"
-
+# echo "pass in quick on lo inet proto icmp-type 8 code" >> "$rule_file"
+# echo "pass out quick on lo inet proto icmp-type 8 code" >> "$rule_file"
 # echo "pass in quick on lo inet proto icmp-type 11 code " >> "$rule_file"
 # echo "pass out quick on lo inet proto icmp-type 11 code " >> "$rule_file"
 
@@ -483,8 +497,8 @@ bootp udp 67
 bootp udp 68
 
 ########### ICMP  #######################
-icmp_out_type 3
 icmp_out_type 0
+icmp_out_type 3
 icmp_out_type "echoreq"
 
 ########### GIT ##########################
@@ -494,7 +508,8 @@ client_out tcp 9418
 client_out tcp 9050
 client_out tcp 9001
 
-##########################  COINS   ###############################
+####################  COINS   #######################
+
 
 ################# BITCOIN ##################
 client_out tcp 8332
@@ -573,6 +588,15 @@ echo "block all" >> "$rule_file"
 
 ##############  LOAD THE FILE  #################
 pfctl -f "$rule_file"
+## backup previous config file
+cp "$config_file" "$backup_file"
+## replace config file with new rules
+cp "$rule_file" "$config_file"
+
+echo "ENDWALL BSD LOADED"
+#############################     PRINT ADDRESSES    ########################################################################
+echo "GATEWAY    :      MAC:"$gateway_mac"  IPv4:"$gateway_ip" " 
+echo "INTERFACE_1: "$int_if"  MAC:"$int_mac"   IPv4:"$int_ip" "
 
 }
 
@@ -596,6 +620,15 @@ echo "pass		# establish keep-state" >> "$rule_file"
 ################################################
 # load the rules
 pfctl -f "$rule_file"
+# backup the config file
+cp "$config_file" "$backup_file"
+# replace the previous config file with the new rules
+cp "$rule_file" "$config_file"
+
+echo "DEFAULT RULES RESTORED"
+#############################     PRINT ADDRESSES    ########################################################################
+echo "GATEWAY    :      MAC:"$gateway_mac"  IPv4:"$gateway_ip" " 
+echo "INTERFACE_1: "$int_if"  MAC:"$int_mac"   IPv4:"$int_ip" "
 
 }
 
@@ -613,6 +646,16 @@ echo "pass out quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port !="$l
 echo "pass in quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port "$lo_port" to "$lo_ip" port "$lo_port" " >> "$rule_file"
 echo "pass in quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port "$lo_port" to "$lo_ip" port !="$lo_port" " >> "$rule_file"
 echo "pass in quick on "$lo_if" inet proto "$protocol" from "$lo_ip" port !="$lo_port" to "$lo_ip" port "$lo_port" " >> "$rule_file"
+
+}
+
+
+icmp_lo_type()
+{
+protocol=icmp
+type=$1
+echo "pass out quick on "$lo_if" inet proto "$protocol" from "$lo_ip" to any icmp-type "$type" " >> "$rule_file"
+echo "pass in quick on "$lo_if" inet proto "$protocol" from any to "$lo_ip" icmp-type " "$type" max-pkt-rate 100/10" " >> "$rule_file"
 
 }
 
@@ -684,7 +727,7 @@ icmp_out_all()
 protocol=icmp
 type=$1
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" to any" >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any to "$int_ip" keep state (max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any to "$int_ip" max-pkt-rate 100/10 keep state (max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
 }
 
 icmp_out_type()
@@ -692,15 +735,17 @@ icmp_out_type()
 protocol=icmp
 type=$1
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" to any icmp-type "$type"  " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any to "$int_ip" icmp-type "$type" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 360, tcp.closing 10 ) " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any to "$int_ip" icmp-type "$type" max-pkt-rate 100/10 keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 360, tcp.closing 10 ) " >> "$rule_file"
 }
 
 icmp_out_type2(){
 protocol=icmp
 type=$1
 echo "pass out quick on "$int_if" inet proto "$protocol" all icmp-type "$type" " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" all icmp-type "$type" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 360, tcp.closing 10 ) " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" all icmp-type "$type" max-pkt-rate 100/10 keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 360, tcp.closing 10 ) " >> "$rule_file"
 }
+
+
 
 
 ###############  SERVER INBOUND FUNCTIONS ######################
@@ -751,6 +796,8 @@ default
 else
 main
 fi
+
+date
 
 exit 0
 
