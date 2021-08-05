@@ -285,7 +285,7 @@ echo "set debug info    # logging level " >> "$rule_file"
 
 ################### BLOCK ALL TRAFFIC #####################
 ## block all
-#echo "block all ">> "$rule_file" 
+echo "block all ">> "$rule_file" 
 
 ## Per interface blocking
 echo "block in on "$int_if" all ">> "$rule_file" 
@@ -643,14 +643,14 @@ echo "block return in on ! lo0 proto tcp to port 6000:6010" >> "$rule_file"
 echo "block return out log proto {tcp udp} user _pbuild" >> "$rule_file"
 ################   BLOCK EVERYTHING  ########################
 ### Drop all remaining traffic
-#echo "block all" >> "$rule_file" 
+echo "block all" >> "$rule_file" 
 
 ################### BLOCK ALL TRAFFIC #####################
-echo "block in on "$int_if" all ">> "$rule_file" 
-echo "block in on "$lo_if" all ">> "$rule_file"
+#echo "block in on "$int_if" all ">> "$rule_file" 
+#echo "block in on "$lo_if" all ">> "$rule_file"
  
-echo "block out on "$int_if" all ">> "$rule_file" 
-echo "block out on "$lo_if" all ">> "$rule_file" 
+#echo "block out on "$int_if" all ">> "$rule_file" 
+#echo "block out on "$lo_if" all ">> "$rule_file" 
 
 ##############  LOAD THE FILE  #################
 pfctl -f "$rule_file"
@@ -690,7 +690,7 @@ icmp_lo_type()
 protocol=icmp
 type=$1
 echo "pass out quick on "$lo_if" inet proto "$protocol" from "$lo_ip" to any icmp-type "$type" " >> "$rule_file"
-echo "pass in quick on "$lo_if" inet proto "$protocol" from any to "$lo_ip" icmp-type " "$type" max-pkt-rate 100/10" " >> "$rule_file"
+echo "pass in quick on "$lo_if" inet proto "$protocol" from any to "$lo_ip" icmp-type  "$type" max-pkt-rate "100/10" " >> "$rule_file"
 
 }
 
@@ -713,7 +713,6 @@ client_out_ks()
 protocol=$1
 port1=$2
 
-#### NOTE State tracking slows down connections by a lot (slow internet)
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port "$port1" keep state ( max 100, source-track rule, max-src-nodes 150, max-src-states 20, tcp.established 200, tcp.closing 10 )" >> "$rule_file"
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port !="$port1" keep state ( max 100, source-track rule, max-src-nodes 150, max-src-states 20, tcp.established 200, tcp.closing 10 )" >> "$rule_file"
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port !="$port1" to any port "$port1" keep state ( max 100, source-track rule, max-src-nodes 150, max-src-states 20, tcp.established 200, tcp.closing 10 )" >> "$rule_file"
@@ -751,23 +750,23 @@ icmp_out_all()
 {
 protocol=icmp
 type=$1
-echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" to any" >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any to "$int_ip" max-pkt-rate 100/10 keep state (max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
+echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" to any keep state" >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any to "$int_ip" max-pkt-rate "100/10" keep state (max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
 }
 
 icmp_out_type()
 {
 protocol=icmp
 type=$1
-echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" to any icmp-type "$type"  " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any to "$int_ip" icmp-type "$type" max-pkt-rate 100/10 keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 360, tcp.closing 10 ) " >> "$rule_file"
+echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" to any icmp-type "$type" keep state " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any to "$int_ip" icmp-type "$type" max-pkt-rate "100/10" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 360, tcp.closing 10 ) " >> "$rule_file"
 }
 
 icmp_out_type2(){
 protocol=icmp
 type=$1
 echo "pass out quick on "$int_if" inet proto "$protocol" all icmp-type "$type" " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" all icmp-type "$type" max-pkt-rate 100/10 keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 360, tcp.closing 10 ) " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" all icmp-type "$type" max-pkt-rate "100/10" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 360, tcp.closing 10 ) " >> "$rule_file"
 }
 
 
@@ -778,12 +777,15 @@ server_in()
 {
 protocol=$1
 port1=$2
+
 ### Same port connection port to same port
-#echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" " to "$int_ip" port "$port1  " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port "$port1" max-pkt-rate 100/10 keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
+## echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" " to "$int_ip" port "$port1" keep state " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port "$port1" max-pkt-rate "100/10" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
+
 ##  Connection to your server port from not same client port 
-#echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1 to "$int_ip" port "$port1" " " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1" to "$int_ip" port "$port1" max-pkt-rate 100/10 keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
+## echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1" to "$int_ip" port "$port1" keep state " >> "$rule_file"
+echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1" to "$int_ip" port "$port1" max-pkt-rate "100/10" keep state ( max 100, source-track rule, max-src-nodes 75, max-src-states 3, tcp.established 60, tcp.closing 5 ) " >> "$rule_file"
+
 }
 
 ### for internal LAN clients where you know the connecting IP 
