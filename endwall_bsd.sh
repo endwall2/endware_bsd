@@ -15,17 +15,19 @@
 ################## INSTRUCTIONS ######################
 ## $ su
 ## # mkdir -p /root/sec   # make a directory to hold the rules
+## # cp endwall_pf.sh /root/sec
+## # cd /root/sec
 ## # ./endwall_pf.sh      # creates rules and loads them
 ## 
 ## # cat /root/sec/pf_rules.conf   # view the rules file
 ## # pfctl -sr     # show the rule set after loading
 ##
-## Default rules
+## Default rules (OpenBSD default PF setting)
 ## # ./endwall_pf.sh -d
 ##
 ## Tables (not workng yet)
 ## # pfctl badhosts -T add "8.8.8.0/24"
-## # echo "8.8.8.0/24" >> /root/sec/blacklist.txt
+## # echo "8.8.8.0/24" >> /etc/blacklist.txt
 #######################################################
 #############################################################################################################################################################################
 #                                         ACKNOWLEDGMENTS
@@ -182,6 +184,11 @@ lo_ip="$( ifconfig | grep "inet " | head -n 1 | cut -d " " -f 2 )"
 #gateway_ip="$(route show | grep "default" | cut -d " " -f 13)"
 gateway_ip="$( route show | grep "default" | awk '{print $2}' )"
 
+gateway_mac="$( route show | grep "$gateway_ip"" "| tail -n 1 | awk '{print $2}' )"
+
+### Deprecated grab method. Hangs sometimes/ too slow.
+#gateway_mac="$( nmap -sS "$gateway_ip" -p 53 | grep -a "MAC Address:" | awk '{print $3}' ) "
+
 ################  FLUSH RULES    ##########################
 # flush the rules
 #pfctl -F rules 	
@@ -235,9 +242,6 @@ cp "$rule_file" "$config_file"
 
 echo "DEFAULT RULES RESTORED"
 
-################### VARIABLES ##############################
-## Requires nmap
-#gateway_mac="$( nmap -sS "$gateway_ip" -p 53 | grep -a "MAC Address:" | awk '{print $3}' ) "
 #############################     PRINT ADDRESSES    ########################################################################
 echo "GATEWAY    :      MAC:"$gateway_mac"  IPv4:"$gateway_ip" " 
 echo "INTERFACE_1: "$int_if"  MAC:"$int_mac"   IPv4:"$int_ip" "
@@ -268,10 +272,6 @@ echo "set block-policy drop   # default block policy " >> "$rule_file"
 echo "set debug info    # logging level " >> "$rule_file" 
 
 #############  VARIABLES ################################
-## Requires nmap 
-## use this for mac address binding to the gateway if required
-## otherwise comment out or move this to before the ip address printout
-#gateway_mac="$( nmap -sS "$gateway_ip" -p 53 | grep -a "MAC Address:" | awk '{print $3}' ) "
 
 ###########   TABLES ###################################
 
@@ -279,7 +279,9 @@ echo "set debug info    # logging level " >> "$rule_file"
 #### Default blacklist
 #table <blacklist> persist file "$blacklist_file"
 #block quick on lo from <blacklist> to any
+#block quick on lo from lo to <blacklist>
 #block quick on "$int_if" from <blacklist> to any
+#block quick on "$int_if" from "$int_ip" to <blacklist>
 
 ################### BLOCK ALL TRAFFIC #####################
 ## block all
@@ -485,6 +487,8 @@ client_out udp 68
 ################### DNS CLIENT #####################
 client_out tcp 53
 client_out udp 53
+client_out tcp 953
+client_out udp 953
 
 ################### HTTP CLIENT #######################
 client_out tcp 80
@@ -657,9 +661,6 @@ cp "$rule_file" "$config_file"
 
 echo "ENDWALL BSD LOADED"
 
-### moved from top of function to here in case rules fail from 
-### a previous run causing a hang. run the defaults in that case.
-gateway_mac="$( nmap -sS "$gateway_ip" -p 53 | grep -a "MAC Address:" | awk '{print $3}' ) "
 #############################     PRINT ADDRESSES    ########################################################################
 echo "GATEWAY    :      MAC:"$gateway_mac"  IPv4:"$gateway_ip" " 
 echo "INTERFACE_1: "$int_if"  MAC:"$int_mac"   IPv4:"$int_ip" "
@@ -725,10 +726,10 @@ protocol=$1
 port1=$2
 
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port "$port1" keep state " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port "$port1" keep state " >> "$rule_file"
-
 echo "pass out quick on "$int_if" inet proto "$protocol" from "$int_ip" port "$port1" to any port !="$port1" keep state " >> "$rule_file"
-echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1" to "$int_ip" port "$port1" keep state " >> "$rule_file"
+
+#echo "pass in quick on "$int_if" inet proto "$protocol" from any port !="$port1" to "$int_ip" port "$port1" keep state " >> "$rule_file"
+#echo "pass in quick on "$int_if" inet proto "$protocol" from any port "$port1" to "$int_ip" port "$port1" keep state " >> "$rule_file"
 
 }
 
